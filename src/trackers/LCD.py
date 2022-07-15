@@ -24,10 +24,10 @@ class LCD():
         self.config = config
         self.tracker = 'LCD'
         self.source_flag = 'LCD'
-        self.search_url = 'http://unit3d.local/api/torrents/filter'
-        self.torrent_url = 'http://unit3d.local/api/torrents/'
-        self.upload_url = 'http://unit3d.local/api/torrents/upload' 
-        self.signature = f"\n[center][url=http://unit3d.local/forums/topics/3087]Created by L4G's Upload Assistant[/url][/center]"
+        self.search_url = 'https://locadora.xyz/api/torrents/filter'
+        self.torrent_url = 'https://locadora.xyz/api/torrents/'
+        self.upload_url = 'https://locadora.xyz/api/torrents/upload' 
+        self.signature = f"\n[center]Created by L4G's Upload Assistant[/url][/center]"
         
         pass
     
@@ -78,6 +78,11 @@ class LCD():
             'doubleup' : 0,
             'sticky' : 0,
         }
+        # Internal
+        if self.config['TRACKERS'][self.tracker].get('internal', False) == True:
+            if meta['tag'] != "" and (meta['tag'][1:] in self.config['TRACKERS'][self.tracker].get('internal_groups', [])):
+                data['internal'] = 1
+
         if region_id != 0:
             data['region_id'] = region_id
         if distributor_id != 0:
