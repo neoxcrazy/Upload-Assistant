@@ -24,7 +24,6 @@ class HDB():
         self.source_flag = 'HDBits'
         self.username = config['TRACKERS']['HDB'].get('username', '').strip()
         self.passkey = config['TRACKERS']['HDB'].get('passkey', '').strip()
-        self.announce_url = f"https://tracker.hdbits.org/announce.php?passkey={self.passkey}"
         self.rehost_images = config['TRACKERS']['HDB'].get('img_rehost', False)
         self.signature = None
     
@@ -97,7 +96,7 @@ class HDB():
             }.get(resolution, '10')
         return resolution_id
 
-    def get_tags(self, meta):
+    async def get_tags(self, meta):
         tags = []
 
         # Web Services:
@@ -172,10 +171,19 @@ class HDB():
         hdb_name = meta['name']
         hdb_name = hdb_name.replace('H.265', 'HEVC')
         if meta.get('source', '').upper() == 'WEB':
-            hdb_name = hdb_name.replace(meta.get('service', ''), '')
+            hdb_name = hdb_name.replace(f"{meta.get('service', '')} ", '')
         if 'DV' in meta.get('hdr', ''):
             hdb_name = hdb_name.replace(' DV ', ' DoVi ')
+        if meta.get('type') in ('WEBDL', 'WEBRIP', 'ENCODE'):
+            hdb_name = hdb_name.replace(meta['audio'], meta['audio'].replace(' ', ''))
         hdb_name = hdb_name.replace(meta['title'], meta['imdb_info']['aka']).replace(meta.get('aka', ''), '')
+        
+        # Remove Dubbed from title
+        hdb_name = hdb_name.replace('Dubbed', '')
+        hdb_name = ' '.join(hdb_name.split())
+
+        return hdb_name 
+
 
     ###############################################################
     ######   STOP HERE UNLESS EXTRA MODIFICATION IS NEEDED   ######
@@ -186,7 +194,6 @@ class HDB():
         await common.edit_torrent(meta, self.tracker, self.source_flag)
         await self.edit_desc(meta)
         hdb_name = await self.edit_name(meta)
-        await common.unit3d_edit_desc(meta, self.tracker, self.signature)
         cat_id = await self.get_type_category_id(meta)
         codec_id = await self.get_type_codec_id(meta)
         medium_id = await self.get_type_medium_id(meta)
@@ -217,17 +224,17 @@ class HDB():
         hdb_desc = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'r').read()
         torrent_path = f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]{meta['clean_name']}.torrent"
         with open(torrent_path, 'rb') as torrentFile:
-            torrentFileName = unidecode(hdb_name.replace(' ', ''))
+            torrentFileName = unidecode(os.path.basename(meta['video']).replace(' ', '.'))
             files = {
-                'file' : (f"[HDB]{torrentFileName}.torrent".replace(' ', '.'), torrentFile, "application/x-bittorent")
+                'file' : (f"{torrentFileName}.torrent", torrentFile, "application/x-bittorent")
             }
             data = {
                 'name' : hdb_name,
-                'type_category' : cat_id,
-                'type_codec' : codec_id,
-                'type_medium' : medium_id,
-                'type_origin' : 0,
-                'descr' : hdb_desc,
+                'category' : cat_id,
+                'codec' : codec_id,
+                'medium' : medium_id,
+                'origin' : 0,
+                'descr' : hdb_desc.rstrip(),
                 'techinfo' : '',
                 'tags[]' : hdb_tags,
                 'imdb' : f"https://www.imdb.com/title/tt{meta.get('imdb_id', '').replace('tt', '')}/",
@@ -242,10 +249,10 @@ class HDB():
                 data['techinfo'] = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/MEDIAINFO_CLEANPATH.txt", 'r', encoding='utf-8').read()
             # If tv, submit tvdb_id/season/episode
             if meta.get('tvdb_id', 0) != 0:
-                data['tvdb_id'] = meta['tvdb_id']
+                data['tvdb'] = meta['tvdb_id']
             if meta.get('category') == 'TV':
-                data['season'] = int(meta.get('season_int', 1))
-                data['episode'] = int(meta.get('episode_int', 1))
+                data['tvdb_season'] = int(meta.get('season_int', 1))
+                data['tvdb_episode'] = int(meta.get('episode_int', 1))
             # aniDB
 
 
@@ -268,6 +275,8 @@ class HDB():
                         await self.download_new_torrent(id, torrent_path)
                     else:
                         pprint(data)
+                        print("\n\n\n\n")
+                        pprint(up.text)
                         raise UploadException(f"Upload to HDB Failed: result URL {up.url} ({up.status_code}) was not expected", 'red')
         return
 
@@ -284,6 +293,10 @@ class HDB():
             'medium' : await self.get_type_medium_id(meta),
             'search' : meta['resolution']
         }
+        if int(meta.get('imdb_id', '0').replace('tt', '0')) != 0:
+            data['imdb'] = {'id' : meta['imdb_id']}
+        if int(meta.get('tvdb_id', '0')) != 0:
+            data['tvdb'] = {'id' : meta['tvdb_id']}
         try:
             response = requests.get(url=url, data=json.dumps(data))
             response = response.json()
@@ -400,8 +413,9 @@ class HDB():
             desc = re.sub("(\[img=\d+)]", "[imgw]", desc, flags=re.IGNORECASE)
             descfile.write(desc)
             if self.rehost_images == True:
+                cprint("Rehosting Images...", 'green')
                 hdbimg_bbcode = await self.hdbimg_upload(meta)
-                descfile.write(f"\n{hdbimg_bbcode}")
+                descfile.write(f"{hdbimg_bbcode}")
             else:
                 images = meta['image_list']
                 if len(images) > 0: 

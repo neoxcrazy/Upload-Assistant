@@ -98,7 +98,7 @@ class Prep():
             meta['filelist'] = []
             try:
                 guess_name = bdinfo['title'].replace('-',' ')
-                filename = meta['filename'] = guessit(re.sub("[^0-9a-zA-Z\[\]]+", " ", guess_name))['title']
+                filename = guessit(re.sub("[^0-9a-zA-Z\[\]]+", " ", guess_name))['title']
                 untouched_filename = bdinfo['title']
                 try:
                     meta['search_year'] = guessit(bdinfo['title'])['year']
@@ -106,7 +106,7 @@ class Prep():
                     meta['search_year'] = ""
             except Exception:
                 guess_name = bdinfo['label'].replace('-',' ')
-                filename = meta['filename'] = guessit(re.sub("[^0-9a-zA-Z\[\]]+", " ", guess_name))['title']
+                filename = guessit(re.sub("[^0-9a-zA-Z\[\]]+", " ", guess_name))['title']
                 untouched_filename = bdinfo['label']
                 try:
                     meta['search_year'] = guessit(bdinfo['label'])['year']
@@ -126,7 +126,7 @@ class Prep():
             meta['filelist'] = []
             guess_name = meta['discs'][0]['path'].replace('-',' ')
             # filename = guessit(re.sub("[^0-9a-zA-Z]+", " ", guess_name))['title']
-            filename = meta['filename'] = guessit(guess_name)['title']
+            filename = guessit(guess_name)['title']
             untouched_filename = os.path.basename(os.path.dirname(meta['discs'][0]['path']))
             try:
                 meta['search_year'] = guessit(meta['discs'][0]['path'])['year']
@@ -146,7 +146,7 @@ class Prep():
             video, meta['scene'] = self.is_scene(self.path)
             meta['filelist'] = []
             guess_name = meta['discs'][0]['path'].replace('-','')
-            filename = meta['filename'] = guessit(guess_name)['title']
+            filename = guessit(guess_name)['title']
             untouched_filename = os.path.basename(meta['discs'][0]['path'])
             try:
                 meta['search_year'] = guessit(meta['discs'][0]['path'])['year']
@@ -192,6 +192,7 @@ class Prep():
         self.untouched_filename = videoloc.split('/')[-1]
         if " AKA " in filename.replace('.',' '):
             filename = filename.split('AKA')[0]
+        meta['filename'] = filename
 
         meta['bdinfo'] = bdinfo
         
@@ -327,7 +328,8 @@ class Prep():
             meta = await self.tmdb_other_meta(meta)
         # Search tvmaze
         meta['tvmaze_id'], meta['imdb_id'], meta['tvdb_id'] = await self.search_tvmaze(filename, meta['search_year'], meta.get('imdb_id','0'), meta.get('tvdb_id', 0))
-
+        if meta.get('imdb_info', None) == None:
+            meta['imdb_info'] = await self.get_imdb_info(meta['imdb_id'], meta)
         if meta.get('tag', None) == None:
             meta['tag'] = self.get_tag(video, meta)
         else:
@@ -1537,6 +1539,7 @@ class Prep():
         
 
         audio = f"{dual} {codec} {format_settings} {chan}{extra}"
+        audio = ' '.join(audio.split())
         return audio, chan, has_commentary
 
 
@@ -2422,7 +2425,7 @@ class Prep():
             'HBO Go': 'HBO', 'HGTV': 'HGTV', 'HIDI': 'HIDI', 'HIST': 'HIST', 'History': 'HIST', 'HLMK': 'HLMK', 'Hallmark': 'HLMK', 
             'HMAX': 'HMAX', 'HBO Max': 'HMAX', 'HS': 'HS', 'HULU': 'HULU', 'Hulu': 'HULU', 'hoichoi': 'HoiChoi', 'ID': 'ID', 
             'Investigation Discovery': 'ID', 'IFC': 'IFC', 'iflix': 'IFX', 'National Audiovisual Institute': 'INA', 'ITV': 'ITV', 
-            'KAYO': 'KAYO', 'KNOW': 'KNOW', 'Knowledge Network': 'KNOW', 'KNPY': 'KNPY', 'LIFE': 'LIFE', 'Lifetime': 'LIFE', 'LN': 'LN', 
+            'KAYO': 'KAYO', 'KNOW': 'KNOW', 'Knowledge Network': 'KNOW', 'KNPY': 'KNPY', 'Kanopy' : 'KNPY', 'LIFE': 'LIFE', 'Lifetime': 'LIFE', 'LN': 'LN', 
             'MA' : 'MA', 'Movies Anywhere' : 'MA','MBC': 'MBC', 'MNBC': 'MNBC', 'MSNBC': 'MNBC', 'MTOD': 'MTOD', 'Motor Trend OnDemand': 'MTOD', 'MTV': 'MTV', 'MUBI': 'MUBI', 
             'NATG': 'NATG', 'National Geographic': 'NATG', 'NBA': 'NBA', 'NBA TV': 'NBA', 'NBC': 'NBC', 'NF': 'NF', 'Netflix': 'NF', 
             'National Film Board': 'NFB', 'NFL': 'NFL', 'NFLN': 'NFLN', 'NFL Now': 'NFLN', 'NICK': 'NICK', 'Nickelodeon': 'NICK', 'NRK': 'NRK', 
