@@ -189,7 +189,7 @@ class Prep():
             meta['sd'] = self.is_sd(meta['resolution'])
 
             
-        self.untouched_filename = videoloc.split('/')[-1]
+        self.untouched_filename = videoloc.split('/')[-1].split('\\')[-1]
         if " AKA " in filename.replace('.',' '):
             filename = filename.split('AKA')[0]
         meta['filename'] = filename
