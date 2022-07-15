@@ -189,7 +189,7 @@ class Prep():
             meta['sd'] = self.is_sd(meta['resolution'])
 
             
-        
+        self.untouched_filename = videoloc.split('/')[-1]
         if " AKA " in filename.replace('.',' '):
             filename = filename.split('AKA')[0]
 
@@ -2173,11 +2173,10 @@ class Prep():
                 name = f"{title} {year} {alt_title} {season}{episode} {episode_title} {edition} {repack} {resolution} HDTV {audio} {video_encode}"
                 potential_missing = []
 
-
-    
+        self.untouched_filename = self.untouched_filename.replace('.mkv','').replace('.mp4','')
+        name = str(self.untouched_filename).replace(".", " ").replace("DDP2 0","DDP2.0").replace("DDP5 1","DDP5.1").replace("H 264","H.264").replace("H 265","H.264").replace("DD+7 1","DD+7.1").replace("AAC2 0","AAC2.0")
         name = ' '.join(name.split())
         name_notag = name
-        name = name_notag + tag
         clean_name = self.clean_filename(name)
         return name_notag, name, clean_name, potential_missing
 
