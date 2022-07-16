@@ -2177,7 +2177,7 @@ class Prep():
                 potential_missing = []
 
         self.untouched_filename = self.untouched_filename.replace('.mkv','').replace('.mp4','')
-        name = str(self.untouched_filename).replace(".", " ").replace("DDP2 0","DDP2.0").replace("DDP5 1","DDP5.1").replace("H 264","H.264").replace("H 265","H.264").replace("DD+7 1","DD+7.1").replace("AAC2 0","AAC2.0").replace('DD5 1','DD5.1').replace('DD2 0','DD2.0').replace('TrueHD 7 1','TrueHD 7.1')
+        name = str(self.untouched_filename).replace(".", " ").replace("DDP2 0","DDP2.0").replace("DDP5 1","DDP5.1").replace("H 264","H.264").replace("H 265","H.264").replace("DD+7 1","DD+7.1").replace("AAC2 0","AAC2.0").replace('DD5 1','DD5.1').replace('DD2 0','DD2.0').replace('TrueHD 7 1','TrueHD 7.1').replace('DTS-HD MA 7 1','DTS-HD MA 7.1')
         name = ' '.join(name.split())
         name_notag = name
         clean_name = self.clean_filename(name)
