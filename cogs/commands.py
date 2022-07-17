@@ -421,7 +421,7 @@ class Commands(commands.Cog):
                 await asyncio.sleep(0.3)
             if "LCD" in each.replace(' ', ''):
                 await message.add_reaction(config['DISCORD']['discord_emojis']['LCD'])
-                await asyncio.sleep(0.3)            
+                await asyncio.sleep(0.3)                
         await message.add_reaction(config['DISCORD']['discord_emojis']['MANUAL'])
         await asyncio.sleep(0.3)
         await message.add_reaction(config['DISCORD']['discord_emojis']['CANCEL'])

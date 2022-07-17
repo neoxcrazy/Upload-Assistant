@@ -45,10 +45,11 @@ except ModuleNotFoundError:
     cprint('Missing Module Found. Please reinstall required dependancies.', 'grey', 'on_red')
     cprint('pip3 install --user -U -r requirements.txt', 'grey', 'on_red')
     exit()
+except KeyboardInterrupt:
+    exit()
 
 
 
-import imdb
 from src.args import Args
 from src.exceptions import *
 from src.trackers.PTP import PTP
@@ -281,22 +282,31 @@ class Prep():
                     use_vs = True
                 else:
                     use_vs = False
-                ds = multiprocessing.Process(target=self.disc_screenshots, args=(filename, bdinfo, meta['uuid'], base_dir, use_vs, meta.get('image_list', []), meta.get('ffdebug', False), None))
-                ds.start()
-                while ds.is_alive() == True:
-                    await asyncio.sleep(1)
+                try:
+                    ds = multiprocessing.Process(target=self.disc_screenshots, args=(filename, bdinfo, meta['uuid'], base_dir, use_vs, meta.get('image_list', []), meta.get('ffdebug', False), None))
+                    ds.start()
+                    while ds.is_alive() == True:
+                        await asyncio.sleep(1)
+                except KeyboardInterrupt:
+                    ds.terminate()
         elif meta['is_disc'] == "DVD":
             if meta.get('edit', False) == False:
-                ds = multiprocessing.Process(target=self.dvd_screenshots, args=(meta, 0, None))
-                ds.start()
-                while ds.is_alive() == True:
-                    await asyncio.sleep(1)
+                try:
+                    ds = multiprocessing.Process(target=self.dvd_screenshots, args=(meta, 0, None))
+                    ds.start()
+                    while ds.is_alive() == True:
+                        await asyncio.sleep(1)
+                except KeyboardInterrupt:
+                    ds.terminate()
         else:
             if meta.get('edit', False) == False:
-                s = multiprocessing.Process(target=self.screenshots, args=(videopath, filename, meta['uuid'], base_dir, meta))
-                s.start()
-                while s.is_alive() == True:
-                    await asyncio.sleep(3)
+                try:
+                    s = multiprocessing.Process(target=self.screenshots, args=(videopath, filename, meta['uuid'], base_dir, meta))
+                    s.start()
+                    while s.is_alive() == True:
+                        await asyncio.sleep(3)
+                except KeyboardInterrupt:
+                    s.terminate()
 
 
 
@@ -328,7 +338,7 @@ class Prep():
             meta = await self.tmdb_other_meta(meta)
         # Search tvmaze
         meta['tvmaze_id'], meta['imdb_id'], meta['tvdb_id'] = await self.search_tvmaze(filename, meta['search_year'], meta.get('imdb_id','0'), meta.get('tvdb_id', 0))
-        if meta.get('imdb_info', None) == None:
+        if meta.get('imdb_info', None) == None and int(meta['imdb_id']) != 0:
             meta['imdb_info'] = await self.get_imdb_info(meta['imdb_id'], meta)
         if meta.get('tag', None) == None:
             meta['tag'] = self.get_tag(video, meta)
@@ -2786,12 +2796,13 @@ class Prep():
         
 
     async def search_imdb(self, filename, search_year):
-        imdbID = None
+        imdbID = '0'
         ia = Cinemagoer()
         search = ia.search_movie(f"{filename}")
         for movie in search:
-            if movie.get('year') == search_year:
-                imdbID = str(movie.movieID).replace('tt', '')
+            if filename in movie.get('title', ''):
+                if movie.get('year') == search_year:
+                    imdbID = str(movie.movieID).replace('tt', '')
         return imdbID
 
 

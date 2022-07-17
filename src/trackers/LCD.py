@@ -24,10 +24,10 @@ class LCD():
         self.config = config
         self.tracker = 'LCD'
         self.source_flag = 'LOCADORA'
-        self.search_url = 'https://locadora.xyz/api/torrents/filter'
-        self.torrent_url = 'https://locadora.xyz/api/torrents/'
-        self.upload_url = 'https://locadora.xyz/api/torrents/upload' 
-        self.signature = f"\n[center]Created by L4G's Upload Assistant[/center]"
+        self.search_url = 'https://dev.locadora.xyz/api/torrents/filter'
+        self.torrent_url = 'https://dev.locadora.xyz/api/torrents/'
+        self.upload_url = 'https://dev.locadora.xyz/api/torrents/upload' 
+        self.signature = f"\n[center]Criado usando L4G's Upload Assistant[/center]"
         
         pass
     
@@ -35,11 +35,12 @@ class LCD():
         common = COMMON(config=self.config)
         await common.edit_torrent(meta, self.tracker, self.source_flag)
         await common.unit3d_edit_desc(meta, self.tracker, self.signature)
-        cat_id = await self.get_cat_id(meta['category'], meta.get('edition', ''))
+        cat_id = await self.get_cat_id(meta['category'], meta.get('edition', ''), meta)
         type_id = await self.get_type_id(meta['type'])
         resolution_id = await self.get_res_id(meta['resolution'])
         region_id = await common.unit3d_region_ids(meta.get('region'))
         distributor_id = await common.unit3d_distributor_ids(meta.get('distributor'))
+        name = await self.edit_name(meta)
         if meta['anon'] == 0 and bool(distutils.util.strtobool(self.config['TRACKERS'][self.tracker].get('anon', "False"))) == False:
             anon = 0
         else:
@@ -55,7 +56,7 @@ class LCD():
         open_torrent = open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[LCD]{meta['clean_name']}.torrent", 'rb')
         files = {'torrent': ("placeholder.torrent", open_torrent, "application/x-bittorrent")}
         data = {
-            'name' : meta['name'],
+            'name' : name,
             'description' : desc,
             'mediainfo' : mi_dump,
             'bdinfo' : bd_dump, 
@@ -116,12 +117,14 @@ class LCD():
 
 
 
-    async def get_cat_id(self, category_name, edition):
+    async def get_cat_id(self, category_name, edition, meta):
         category_id = {
             'MOVIE': '1', 
             'TV': '2',
             'ANIMES': '6'
             }.get(category_name, '0')
+        if meta['anime'] == True and category_id == '2':
+            category_id = '6'
         return category_id
 
     async def get_type_id(self, type):
@@ -157,11 +160,11 @@ class LCD():
 
     async def search_existing(self, meta):
         dupes = []
-        cprint("Searching for existing torrents on site...", 'grey', 'on_yellow')
+        cprint("Buscando por duplicatas no tracker...", 'grey', 'on_yellow')
         params = {
             'api_token' : self.config['TRACKERS'][self.tracker]['api_key'].strip(),
             'tmdbId' : meta['tmdb'],
-            'categories[]' : await self.get_cat_id(meta['category'], meta.get('edition', '')),
+            'categories[]' : await self.get_cat_id(meta['category'], meta.get('edition', ''), meta),
             'types[]' : await self.get_type_id(meta['type']),
             'resolutions[]' : await self.get_res_id(meta['resolution']),
             'name' : ""
@@ -187,7 +190,14 @@ class LCD():
                 # if difference >= 0.05:
                 dupes.append(result)
         except:
-            cprint('Unable to search for existing torrents on site. Either the site is down or your API key is incorrect', 'grey', 'on_red')
+            cprint('Não foi possivel buscar no tracker torrents duplicados. O tracker está offline ou sua api está incorreta', 'grey', 'on_red')
             await asyncio.sleep(5)
 
         return dupes
+
+    async def edit_name(self, meta):
+       
+       
+        name = meta['uuid'].replace('.mkv','').replace('.mp4','').replace(".", " ").replace("DDP2 0","DDP2.0").replace("DDP5 1","DDP5.1").replace("H 264","H.264").replace("H 265","H.264").replace("DD+7 1","DD+7.1").replace("AAC2 0","AAC2.0").replace('DD5 1','DD5.1').replace('DD2 0','DD2.0').replace('TrueHD 7 1','TrueHD 7.1').replace('DTS-HD MA 7 1','DTS-HD MA 7.1').replace('-C A A','-C.A.A')
+        
+        return name

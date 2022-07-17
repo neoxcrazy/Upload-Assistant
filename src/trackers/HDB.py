@@ -175,9 +175,10 @@ class HDB():
         if 'DV' in meta.get('hdr', ''):
             hdb_name = hdb_name.replace(' DV ', ' DoVi ')
         if meta.get('type') in ('WEBDL', 'WEBRIP', 'ENCODE'):
-            hdb_name = hdb_name.replace(meta['audio'], meta['audio'].replace(' ', ''))
-        hdb_name = hdb_name.replace(meta['title'], meta['imdb_info']['aka']).replace(meta.get('aka', ''), '')
-        
+            hdb_name = hdb_name.replace(meta['audio'], meta['audio'].replace(' ', '', 1))
+        hdb_name = hdb_name.replace(meta.get('aka', ''), '').replace(meta['title'], meta['imdb_info']['aka'])
+        if meta['year'] != meta.get('imdb_info', {}).get('year', meta['year']):
+            hdb_name = hdb_name.replace(str(meta['year']), str(meta['imdb_info']['year']))
         # Remove Dubbed from title
         hdb_name = hdb_name.replace('Dubbed', '')
         hdb_name = ' '.join(hdb_name.split())
@@ -387,13 +388,16 @@ class HDB():
         with open(f"{meta['base_dir']}/tmp/{meta['uuid']}/[{self.tracker}]DESCRIPTION.txt", 'w') as descfile:
             from src.bbcode import BBCODE
             # Add This line for all web-dls
-            if meta['type'] == 'WEBDL' and meta.get('service_longname', '') != '':
+            if meta['type'] == 'WEBDL' and meta.get('service_longname', '') != '' and meta.get('description', None) == None:
                 descfile.write(f"[center][quote]This release is sourced from {meta['service_longname']}[/quote][/center]")
             bbcode = BBCODE()
             if meta.get('discs', []) != []:
                 discs = meta['discs']
                 if discs[0]['type'] == "DVD":
                     descfile.write(f"[quote=VOB MediaInfo]{discs[0]['vob_mi']}[/quote]\n")
+                    descfile.write("\n")
+                if discs[0]['type'] == "BDMV":
+                    descfile.write(f"[quote]{discs[0]['summary'].rstrip()}[/quote]\n")
                     descfile.write("\n")
                 if len(discs) >= 2:
                     for each in discs[1:]:
